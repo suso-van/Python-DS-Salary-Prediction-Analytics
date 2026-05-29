@@ -4,47 +4,79 @@ import joblib
 import pandas as pd
 import numpy as np
 
-def live_inference():
+def get_terminal_input(prompt, options=None, default=None):
+    """Helper to capture clean user input with default fail-safes."""
+    if options:
+        prompt_text = f"{prompt} ({'/'.join(options)}) [{default}]: "
+    else:
+        prompt_text = f"{prompt} [{default}]: "
+        
+    user_input = input(prompt_text).strip().upper()
+    
+    if not user_input and default:
+        return default
+    if options and user_input not in options:
+        print(f" Invalid selection. Defaulting to '{default}'")
+        return default
+    return user_input
+
+def live_interactive_inference():
     MODEL_PATH = os.path.join("models", "best_salary_pipeline.joblib")
     
     if not os.path.exists(MODEL_PATH):
         print(f"[Error] No trained brain found at {MODEL_PATH}. Run 'python main.py' first.")
         return
 
-    # Load the end-to-end inference pipeline
-    print("[Inference] Spawning prediction engine context...")
+    print("\n==========================================================================")
+    print("      INITIALIZING SALARY PREDICTION ANALYTICS TERMINAL INTERFACE         ")
+    print("==========================================================================\n")
+    
     pipeline = joblib.load(MODEL_PATH)
 
-    # Mocking a new, incoming candidate profile setup
-    # Feel free to change these parameters to test different production outputs
-    new_profile = {
-        'work_year': [2026],
-        'experience_level': ['SE'],          # EN, MI, SE, EX
-        'employment_type': ['FT'],           # FT, PT, CT, FL
-        'job_title': ['Machine Learning Engineer'], # Cleaned automatically by pipeline if hooked
-        'employee_residence': ['US'],        # ISO Country codes
-        'remote_ratio': [100],               # 0, 50, 100
-        'company_location': ['US'],
-        'company_size': ['M']                # S, M, L
+    # Gather inputs dynamically from the user
+    work_year = input("Target Job Year [2026]: ").strip()
+    work_year = int(work_year) if work_year.isdigit() else 2026
+
+    experience_level = get_terminal_input("Experience Level", ["EN", "MI", "SE", "EX"], "SE")
+    employment_type = get_terminal_input("Employment Type", ["FT", "PT", "CT", "FL"], "FT")
+    
+    job_title = input("Enter Raw Job Title [Data Scientist]: ").strip()
+    if not job_title:
+        job_title = "Data Scientist"
+        
+    employee_residence = input("Candidate Residence Country Code (ISO) [US]: ").strip().upper() or "US"
+    
+    remote_ratio = input("Remote Percentage (0, 50, 100) [100]: ").strip()
+    remote_ratio = int(remote_ratio) if remote_ratio in ["0", "50", "100"] else 100
+    
+    company_location = input("Company Location Country Code (ISO) [US]: ").strip().upper() or "US"
+    company_size = get_terminal_input("Company Size", ["S", "M", "L"], "M")
+
+    # Pack input array structure
+    profile = {
+        'work_year': [work_year],
+        'experience_level': [experience_level],
+        'employment_type': [employment_type],
+        'job_title': [job_title],
+        'employee_residence': [employee_residence],
+        'remote_ratio': [remote_ratio],
+        'company_location': [company_location],
+        'company_size': [company_size]
     }
 
-    # Convert to DataFrame matching model structural input boundaries
-    input_df = pd.DataFrame(new_profile)
+    input_df = pd.DataFrame(profile)
     
-    # Execute atomic pipeline processing and forward prediction pass
+    # Forward model prediction pass
     predicted_log_salary = pipeline.predict(input_df)[0]
-    
-    # Convert log-space prediction back to actual standard dollar scale
-    # (Using expm1 assuming target optimization was active in training)
     final_salary = np.expm1(predicted_log_salary)
 
-    print("\n======================== PREDICTION PROFILE REPORT ========================")
-    print(f" Target Position : {new_profile['job_title'][0]} ({new_profile['experience_level'][0]})")
-    print(f" Company Profile : Location: {new_profile['company_location'][0]} | Size: {new_profile['company_size'][0]}")
-    print(f" Remote Scope    : {new_profile['remote_ratio'][0]}%")
-    print("---------------------------------------------------------------------------")
-    print(f" Market Evaluated Valuation Estimate: ${final_salary:,.2f} USD / year")
-    print("===========================================================================\n")
+    print("\n======================== LIVE INFERENCE REPORT ========================")
+    print(f" Target Position : {job_title} ({experience_level})")
+    print(f" Scope           : {remote_ratio}% Remote | Type: {employment_type}")
+    print(f" Geography       : Candidate: {employee_residence} -> Company: {company_location} ({company_size})")
+    print("-----------------------------------------------------------------------")
+    print(f" Market Valuation Estimate: ${final_salary:,.2f} USD / year")
+    print("=======================================================================\n")
 
 if __name__ == "__main__":
-    live_inference()
+    live_interactive_inference()
