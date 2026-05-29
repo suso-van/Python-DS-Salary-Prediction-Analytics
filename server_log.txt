@@ -1,0 +1,3 @@
+INFO:     Will watch for changes in these directories: ['/Users/susovanchatterjee/Documents/GitHub/Python-DS-Salary-Prediction-Analytics']
+ERROR:    [Errno 48] Address already in use
+[Core] Hot-Reload Successful. Model active state updated: 2026-05-29T16:13:59.709513

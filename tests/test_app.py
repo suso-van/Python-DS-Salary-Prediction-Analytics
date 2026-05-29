@@ -1,22 +1,20 @@
 # tests/test_app.py
-import pytest
 from fastapi.testclient import TestClient
 from app import app
 
-# Initialize the simulated HTTP test client
 client = TestClient(app)
+HEADERS = {"X-API-KEY": "ghost_architect_secure_token_2026"}
 
-def test_api_health_check():
-    """Verifies the backend API root gateway boots into an online status."""
+def test_api_health_check_status():
+    """Asserts that the public health check endpoint responds successfully."""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
 
 def test_api_predict_endpoint_validation_fallback():
     """
-    Asserts that sending an invalid data type (e.g., remote_ratio as a string 
-    instead of an int) safely returns a 422 Unprocessable Entity status 
-    instead of a 500 Server Crash.
+    Asserts that sending an invalid data type safely returns a 422 Unprocessable Entity
+    once cleared by the security layer.
     """
     malformed_payload = {
         "work_year": 2026,
@@ -24,10 +22,11 @@ def test_api_predict_endpoint_validation_fallback():
         "employment_type": "FT",
         "job_title": "ML Engineer",
         "employee_residence": "US",
-        "remote_ratio": "Fully Remote!",  # Structural Error: Expecting Integer
+        "remote_ratio": "Fully Remote!",  # Structural Error: Should be Integer
         "company_location": "US",
         "company_size": "M"
     }
     
-    response = client.post("/predict", json=malformed_payload)
+    # Passing valid security token but bad data structure
+    response = client.post("/predict", json=malformed_payload, headers=HEADERS)
     assert response.status_code == 422
