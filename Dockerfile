@@ -15,16 +15,13 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# 6. Explicitly ensure web server packages are tracking if omitted earlier
-RUN pip install --no-cache-dir fastapi uvicorn joblib
-
-# 7. Copy the local application layers into the container workspace
+# 6. Copy the local application layers into the container workspace
 COPY ./src /app/src
 COPY ./models /app/models
 COPY ./app.py /app/app.py
 
-# 8. Expose the standard FastAPI network port boundary
+# 7. Expose the standard FastAPI network port boundary
 EXPOSE 8000
 
-# 9. Launch the Uvicorn application server bound to all incoming network interfaces
+# 8. Launch the Uvicorn application server bound to all incoming network interfaces
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
